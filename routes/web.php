@@ -6,6 +6,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\BankTransferController;
 use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\LabelExportController;
 
 Route::get('/', fn() => redirect()->route('orders.import.create'));
 
@@ -35,6 +36,9 @@ Route::prefix('po')->name('po.')->group(function () {
     Route::get('/', [PurchaseOrderController::class, 'index'])->name('index');         // 選択&入力画面
     Route::post('/generate', [PurchaseOrderController::class, 'generate'])->name('generate'); // DOCXを生成してDL
 });
+
+Route::get('/labels',            [LabelExportController::class, 'index'])->name('labels.index');
+Route::post('/labels/export',    [LabelExportController::class, 'export'])->name('labels.export');
 
 Route::get('/debug/zip', function () {
     return response()->json([

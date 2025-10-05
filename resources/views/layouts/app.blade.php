@@ -63,6 +63,7 @@
       <a href="{{ route('orders.index') }}" class="{{ request()->routeIs('orders.index') ? 'active' : '' }}">注文一覧</a>
       <a href="{{ route('bank.index') }}" class="{{ request()->routeIs('bank.*') ? 'active' : '' }}">振り込み記録</a>
       <a href="{{ route('po.index') }}" class="{{ request()->routeIs('po.*') ? 'active' : '' }}">注文書発行</a>
+      <li><a href="{{ route('labels.index') }}">送り状発行</a></li>
     </nav>
   </aside>
   <main>

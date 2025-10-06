@@ -9,3 +9,22 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* モダンな大きめチェックボックス */
+.label { font-weight: 600; color:#334155; }
+
+.chk {
+  display:inline-flex; align-items:center; gap:10px;
+  padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px;
+  background:#fff; cursor:pointer; user-select:none;
+  transition: background .15s, box-shadow .15s, border-color .15s;
+}
+.chk:hover { background:#f8fafc; }
+.chk:has(input:checked) { border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.15); }
+
+.chk input[type="checkbox"]{
+  width:22px; height:22px;
+  accent-color:#2563eb; /* 近代ブラウザで綺麗に */
+  transform: translateZ(0); /* レンダリング補助 */
+}
+.chk .text { font-size:14px; color:#1f2937; }

@@ -8,14 +8,6 @@
 
   <h1 style="margin:0 0 12px;">注文書発行</h1>
 
-  <p class="help" style="color:#64748b;">
-    1) 下の一覧から注文にチェック → 2) 右側の発注先や発注情報を入力 → 3) 「注文書を発行」で DOCX をダウンロードします。<br>
-    テンプレート: <code>storage/app/templates/order_form.docx</code>
-    @if(!$templateExists)
-      <span style="color:#b91c1c;">（未配置です。後述のプレースホルダでテンプレートを置いてください）</span>
-    @endif
-  </p>
-
   <form method="get" class="toolbar filterbar" action="{{ route('po.index') }}">
     <div class="field" style="min-width:260px;">
       <div class="label">検索</div>
@@ -28,22 +20,24 @@
     </div>
 
     <div class="field" style="min-width:220px; max-width:240px;">
-      <div class="label">年月</div>
-      <div class="input-icon">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-        <input type="month" name="ym" value="{{ $ym ?? '' }}">
+        <div class="label">年月</div>
+
+        <div class="actions" style="gap:6px;">
+          <button class="btn ghost sm" type="button" onclick="setYm('{{ $thisMonth }}')">今月</button>
+          <button class="btn ghost sm" type="button" onclick="setYm('{{ $prevMonth }}')">先月</button>
+          <button class="btn ghost sm" type="button" onclick="setYm('')">クリア</button>
+        </div>
+
+        <div class="input-icon" style="margin-top:6px;">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <input type="month" name="ym" value="{{ $ym ?? '' }}">
+        </div>
       </div>
-      <div class="actions" style="margin-top:6px; gap:6px;">
-        <button class="btn ghost sm" type="button" onclick="setYm('{{ $thisMonth }}')">今月</button>
-        <button class="btn ghost sm" type="button" onclick="setYm('{{ $prevMonth }}')">先月</button>
-        <button class="btn ghost sm" type="button" onclick="setYm('')">クリア</button>
-      </div>
-    </div>
 
     <div class="field" style="min-width:200px; max-width:220px;">
       <div class="label">並び順</div>
@@ -108,87 +102,16 @@
         <div style="margin-top:8px;">
           {{ $orders->links() }}
         </div>
-        <p class="help" style="color:#64748b; margin-top:6px;">※ ページをまたいだ選択保持は行いません（必要なら一時的に絞り込んでから選択してください）。</p>
       </div>
 
       <div style="flex: 1 1 320px; min-width: 320px;">
-        <strong>注文書情報</strong>
-        <div class="row" style="margin-top:8px;">
-          <div class="field" style="flex:1;">
-            <div class="label">発注番号</div>
-            <input type="text" name="po_number" placeholder="例: PO-2025-001">
-          </div>
-          <div class="field" style="flex:1;">
-            <div class="label">発注日</div>
-            <input type="text" name="po_date" placeholder="例: 2025-10-04（空なら今日）">
-          </div>
-        </div>
-
-        <div class="field" style="margin-top:8px;">
-          <div class="label">発注先（必須）</div>
-          <input type="text" name="vendor_name" required placeholder="例: ○○商店 御中">
-        </div>
-
-        <div class="field">
-          <div class="label">発注先 住所</div>
-          <input type="text" name="vendor_address" placeholder="例: 〒100-0001 東京都…">
-        </div>
-
-        <div class="row">
-          <div class="field" style="flex:1;">
-            <div class="label">TEL</div>
-            <input type="text" name="vendor_tel" placeholder="">
-          </div>
-          <div class="field" style="flex:1;">
-            <div class="label">FAX</div>
-            <input type="text" name="vendor_fax" placeholder="">
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="field" style="flex:1;">
-            <div class="label">ご担当</div>
-            <input type="text" name="attn" placeholder="例: 営業一課 ○○様">
-          </div>
-          <div class="field" style="flex:1;">
-            <div class="label">納期</div>
-            <input type="text" name="due_date" placeholder="例: 2025-10-20">
-          </div>
-        </div>
-
-        <div class="field">
-          <div class="label">支払条件</div>
-          <input type="text" name="payment_terms" placeholder="例: 月末締翌月末振込">
-        </div>
-
-        <div class="field">
-          <div class="label">備考</div>
-          <textarea name="remarks" style="min-height: 110px;" placeholder="任意の連絡事項など"></textarea>
-        </div>
-
         <div class="actions" style="margin-top:10px;">
-          <button class="btn primary">注文書を発行（DOCX）</button>
+          <button class="btn primary">注文書を発行</button>
         </div>
       </div>
     </div>
   </form>
 
-  <details style="margin-top:16px;">
-    <summary>テンプレート（DOCX）の作り方</summary>
-    <div class="help" style="white-space:pre-wrap; color:#334155;">
-【配置場所】
-storage/app/templates/order_form.docx
-
-【ヘッダのプレースホルダ】
-${po_number} / ${po_date} / ${vendor_name} / ${vendor_address} / ${vendor_tel} / ${vendor_fax} / ${attn} / ${due_date} / ${payment_terms} / ${remarks} / ${grand_total}
-
-【明細テーブル（1行だけ作成しておき、TemplateProcessorの cloneRow で複製されます）】
-${rno} / ${order_no} / ${buyer} / ${sku} / ${name} / ${unit} / ${qty} / ${unit_price} / ${line_total}
-
-※ 太字や罫線等の装飾は Word 側で行って構いません。
-※ 金額類はコントローラ側でカンマ区切り値を差し込みます。
-    </div>
-  </details>
 
   <script>
     function setYm(v){ const el = document.querySelector('input[name="ym"]'); if (el) el.value = v; }

@@ -9,7 +9,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Support\AddressHelper;
-
+use PhpOffice\PhpSpreadsheet\Calculation\TextData\Replace;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Settings;
@@ -26,6 +26,8 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Color;
 use PhpOffice\PhpSpreadsheet\Style\Conditional;
+
+use Symfony\Component\HttpKernel\Log\Logger;
 
 class PurchaseOrderController extends Controller
 {
@@ -130,20 +132,8 @@ class PurchaseOrderController extends Controller
         $data = $request->validate([
             'order_ids'      => ['required','array','min:1'],
             'order_ids.*'    => ['integer','distinct'],
-            // ヘッダ項目
-            'po_number'      => ['nullable','string','max:100'],
-            'po_date'        => ['nullable','string','max:50'],
-            'vendor_name'    => ['required','string','max:255'],
-            'vendor_address' => ['nullable','string','max:500'],
-            'vendor_tel'     => ['nullable','string','max:100'],
-            'vendor_fax'     => ['nullable','string','max:100'],
-            'attn'           => ['nullable','string','max:100'],
-            'due_date'       => ['nullable','string','max:100'],
-            'payment_terms'  => ['nullable','string','max:200'],
-            'remarks'        => ['nullable','string','max:1000'],
         ],[],[
             'order_ids'   => '対象注文',
-            'vendor_name' => '発注先名',
         ]);
 
         // テンプレ解決
@@ -168,11 +158,11 @@ class PurchaseOrderController extends Controller
 
         $orders = Order::whereIn('id', $data['order_ids'])
         ->orderBy('purchased_at','asc')->orderBy('id','asc')
-        ->get(['id','order_no','buyer_name','purchased_at','purchased_at_text','total']);
+        ->get(['id','order_no','buyer_name','purchased_at','purchased_at_text','total',"shipto_address_full",'shipto_name','shipto_tel','is_gift',"buyer_address_full","buyer_tel","buyer_name","payment_method"]);
 
         $itemsMap = OrderItem::whereIn('order_id', $orders->pluck('id'))
             ->orderBy('id')
-            ->get(['id','order_id','sku','name','quantity','unit_price'])
+            ->get(['id','order_id','sku','name','quantity','unit_price','line_total'])
             ->groupBy('order_id');
 
         if ($orders->isEmpty()) {
@@ -218,18 +208,41 @@ class PurchaseOrderController extends Controller
 
             $item_row = 15;
             $items = $itemsMap->get($o->id, collect());
+            logger()->info(strval($items));
             foreach ($items as $it) {
-                $ws->setCellValue([$item_row, 6], $it->name);
-                $ws->setCellValue([$item_row, 41], $it->quantity);
-                $ws->setCellValue([$item_row, 64], $it->line_total);
+                $ws->setCellValue([6, $item_row], $it->name);
+                $ws->setCellValue([37, $item_row], $it->quantity);
+                $ws->setCellValue([47, $item_row], $it->line_total);
+                $dataRange = 'AU15:AU23';
+                $ws->getStyle($dataRange)->getNumberFormat()
+                      ->setFormatCode('\\\\#,##0');
 
                 $item_row += 2;
             }
 
-            $ws->setCellValue([32, 64], AddressHelper::extractPostalFromText($o->shipto_address_full));
-            $ws->setCellValue([33, 64], $o->shipto_tel);
-            $ws->setCellValue([34, 64], AddressHelper::addressWithoutPostal($o->shipto_address_full));
-            $ws->setCellValue([33, 64], $o->shipto_name);
+            $ws->setCellValue([49, 27], $o->payment_method);
+            $ws->setCellValue([22, 32], AddressHelper::extractPostalFromText($o->shipto_address_full));
+            $ws->setCellValue([22, 33], $o->shipto_tel);
+            $ws->setCellValue([22, 34], AddressHelper::addressWithoutPostal($o->shipto_address_full));
+            $ws->setCellValue([22, 35], $o->shipto_name);
+
+            if($o->is_gift == 1){
+                $buyer_name = $o->buyer_name;
+                $buyer_name = str_replace("様","",$buyer_name);
+                $ws->setCellValue([22, 37], $buyer_name);
+                $ws->setCellValue([22, 38], $o->buyer_tel);
+                $ws->setCellValue([22, 39], AddressHelper::addressWithoutPostal($o->buyer_address_full));
+            }
+        }
+
+        if ($base && $spreadsheet->getSheetCount() > 1) {
+            // 例: 最初のクローン（"01"）をアクティブにする
+            if ($spreadsheet->getSheetByName('01')) {
+                $spreadsheet->setActiveSheetIndexByName('01');
+            } else {
+                $spreadsheet->setActiveSheetIndex(0);
+            }
+            $spreadsheet->removeSheetByIndex($spreadsheet->getIndex($base));
         }
 
         // 出力
@@ -404,6 +417,4 @@ class PurchaseOrderController extends Controller
 
         Log::error('[PO] template not found diagnostics', $context);
     }
-
-
 }

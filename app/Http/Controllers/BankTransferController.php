@@ -16,6 +16,11 @@ class BankTransferController extends Controller
         $year  = $request->integer('y');
         $month = $request->integer('m');
 
+        $ym = trim((string)$request->input('ym', ''));
+        if ($ym && preg_match('/^\d{4}-\d{2}$/', $ym)) {
+            [$year, $month] = array_map('intval', explode('-', $ym));
+        }
+
         $query = Order::query()
             ->withCount('items')
             ->where('payment_method', 'like', '%銀行振込%');

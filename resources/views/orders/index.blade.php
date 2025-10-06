@@ -31,21 +31,25 @@
 
     {{-- 年月（月ピッカー） --}}
     <div class="field" style="min-width:220px; max-width:240px;">
-      <div class="label">年月</div>
-      <div class="input-icon">
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-        <input type="month" name="ym" value="{{ $ym ?? '' }}">
-      </div>
-      <div class="actions" style="margin-top:6px; gap:6px;">
+        <div class="label">年月</div>
+
+        {{-- ↑ 先にクイックボタン --}}
+        <div class="actions" style="gap:6px;">
         <button class="btn ghost sm" type="button" onclick="setYm('{{ $thisMonth }}')">今月</button>
         <button class="btn ghost sm" type="button" onclick="setYm('{{ $prevMonth }}')">先月</button>
         <button class="btn ghost sm" type="button" onclick="setYm('')">クリア</button>
-      </div>
+        </div>
+
+        {{-- ↓ 後に入力欄 --}}
+        <div class="input-icon" style="margin-top:6px;">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+        <input type="month" name="ym" value="{{ $ym ?? '' }}">
+        </div>
     </div>
 
     {{-- 並び替え --}}

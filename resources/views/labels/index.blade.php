@@ -31,7 +31,6 @@
           <tr>
             <th style="width:40px;">選択</th>
             <th>注文番号</th>
-            <th>購入者</th>
             <th>お届け先</th>
             <th>SKU</th>
             <th>品名</th>
@@ -47,7 +46,6 @@
             <tr>
               <td><input type="checkbox" name="order_item_ids[]" value="{{ $it->id }}"></td>
               <td>{{ $o->order_no ?? '-' }}</td>
-              <td>{{ $o->buyer_name ?? '-' }}</td>
               <td>{{ $o->shipto_name ?? '-' }}</td>
               <td>{{ $it->sku }}</td>
               <td>{{ $it->name }}</td>

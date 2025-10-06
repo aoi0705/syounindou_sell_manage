@@ -13,6 +13,7 @@ class OrderImportRequest extends FormRequest
         return [
             'raw_body' => ['required', 'string', 'min:50'],
             'note'     => ['nullable','string','max:2000'],
+            'is_gift'  => ['nullable','boolean'],
         ];
     }
 
@@ -29,6 +30,7 @@ class OrderImportRequest extends FormRequest
         return [
             'raw_body' => 'メール本文',
             'note'     => '備考', // ★追加
+            'is_gift'  => '贈答品フラグ',
         ];
     }
 }

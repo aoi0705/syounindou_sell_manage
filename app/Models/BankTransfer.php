@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class BankTransfer extends Model
 {
@@ -20,10 +19,9 @@ class BankTransfer extends Model
 
     protected $casts = [
         'transfer_at' => 'datetime',
-        'amount' => 'integer',
     ];
 
-    public function order(): BelongsTo
+    public function order()
     {
         return $this->belongsTo(Order::class);
     }

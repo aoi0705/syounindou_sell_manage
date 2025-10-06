@@ -28,6 +28,7 @@ class LabelExportController extends Controller
         // アイテム一覧（最新順でページネーション）
         $items = OrderItem::query()
             ->with(['order:id,order_no,shipto_name,shipto_address_full,shipto_tel,ship_time_window,ship_date_request,payment_method'])
+            ->pending()
             ->when($q !== '', function($w) use ($q) {
                 $w->where('name','like',"%{$q}%")
                   ->orWhere('sku','like',"%{$q}%");
@@ -156,6 +157,15 @@ class LabelExportController extends Controller
         $writer->save($tmp);
 
         $filename = '送り状_'.date('Ymd_His').'.xlsx';
+
+        $ids = $sorted->pluck('id')->all();
+
+        // … 生成と保存が成功した後に …
+        OrderItem::whereIn('id', $ids)->update([
+            'status'          => \App\Models\OrderItem::STATUS_LABEL_ISSUED,
+            'label_issued_at' => now(),
+        ]);
+
         return response()->download($tmp, $filename)->deleteFileAfterSend(true);
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Carbon\CarbonImmutable;
 
@@ -13,27 +14,21 @@ class OrderController extends Controller
      */
     public function index(Request $request)
     {
-        $q    = trim((string)$request->input('q', ''));
-        $sort = $request->input('sort', 'date_desc'); // date_desc/date_asc/total_desc
+        $q     = trim((string)$request->input('q', ''));
+        $ym    = trim((string)$request->input('ym', ''));
+        $sort  = $request->input('sort', 'date_desc');
+        $status= $request->input('status'); // ← 追加: 絞り込みキー
 
-        // <input type="month" name="ym"> から来る YYYY-MM を優先
-        $ym   = trim((string)$request->input('ym', ''));
+        $query = Order::query()
+            ->withCount([
+                'items', // items_count
+                // 状態別カウント
+                'items as items_status_pending_count' => fn($q) => $q->where('status', 0),
+                'items as items_status_labeled_count' => fn($q) => $q->where('status', 1),
+                'items as items_status_shipped_count' => fn($q) => $q->where('status', 2),
+            ]);
 
-        // 互換用（古い y / m パラメータが来た場合）
-        $year  = $request->integer('y');
-        $month = $request->integer('m');
-
-        if ($ym && preg_match('/^\d{4}-\d{2}$/', $ym)) {
-            [$year, $month] = array_map('intval', explode('-', $ym));
-        }
-
-        // 範囲チェック
-        if ($year && ($year < 2000 || $year > 2100)) { $year = null; $month = null; }
-        if ($month && ($month < 1 || $month > 12))   { $month = null; }
-
-        $query = Order::query()->withCount('items');
-
-        // キーワード検索
+        // キーワード
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
                 $w->where('order_no', 'like', "%{$q}%")
@@ -42,47 +37,67 @@ class OrderController extends Controller
             });
         }
 
-        // 年月フィルタ（purchased_at 優先、無ければ purchased_at_text の接頭一致でフォールバック）
-        if ($year) {
-            $tz    = config('app.timezone', 'Asia/Tokyo');
-            $start = CarbonImmutable::create($year, $month ?: 1, 1, 0, 0, 0, $tz);
-            $end   = $month ? $start->addMonths(1) : $start->addYear();
-
-            $query->where(function ($w) use ($start, $end, $year, $month) {
+        // 年月フィルタ（あれば）
+        if ($ym && preg_match('/^\d{4}-\d{2}$/', $ym)) {
+            [$year, $month] = array_map('intval', explode('-', $ym));
+            $start = \Carbon\CarbonImmutable::create($year, $month, 1, 0, 0, 0, config('app.timezone','Asia/Tokyo'));
+            $end   = $start->addMonth();
+            $query->where(function ($w) use ($start,$end,$year,$month) {
                 $w->whereBetween('purchased_at', [$start, $end])
-                  ->orWhere(function ($q2) use ($year, $month) {
-                      if ($month) {
-                          $q2->whereNull('purchased_at')
-                             ->where('purchased_at_text', 'like', sprintf('%04d-%02d%%', $year, $month));
-                      } else {
-                          $q2->whereNull('purchased_at')
-                             ->where('purchased_at_text', 'like', sprintf('%04d-%%', $year));
-                      }
+                  ->orWhere(function ($q2) use ($year,$month) {
+                      $q2->whereNull('purchased_at')
+                         ->where('purchased_at_text','like',sprintf('%04d-%02d%%',$year,$month));
                   });
             });
         }
 
-        // 並び替え
+        // 並び順
         switch ($sort) {
             case 'date_asc':
-                $query->orderBy('purchased_at', 'asc')->orderBy('id', 'asc');
-                break;
+                $query->orderBy('purchased_at','asc')->orderBy('id','asc'); break;
             case 'total_desc':
-                $query->orderBy('total', 'desc');
-                break;
+                $query->orderBy('total','desc'); break;
             default:
-                $query->orderBy('purchased_at', 'desc')->orderBy('id', 'desc');
-                break;
+                $query->orderBy('purchased_at','desc')->orderBy('id','desc'); break;
+        }
+
+        // ▼ 状態で絞り込み（HAVING を使うのがポイント）
+        //   * 全て未対応      : items_status_pending_count  = items_count (>0)
+        //   * 全て送り状発行  : items_status_labeled_count  = items_count (>0)
+        //   * 全て発送済み    : items_status_shipped_count  = items_count (>0)
+        //   * 一部送り状発行  : 0 < items_status_labeled_count  < items_count
+        //   * 一部発送済み    : 0 < items_status_shipped_count  < items_count
+        if (in_array($status, ['pending','labeled','shipped','partial_labeled','partial_shipped'], true)) {
+            $query->having('items_count', '>', 0); // 明細ゼロは除外（必要に応じて外してOK）
+            switch ($status) {
+                case 'pending':
+                    $query->havingRaw('items_status_pending_count = items_count');
+                    break;
+                case 'labeled':
+                    $query->havingRaw('items_status_labeled_count = items_count');
+                    break;
+                case 'shipped':
+                    $query->havingRaw('items_status_shipped_count = items_count');
+                    break;
+                case 'partial_labeled':
+                    $query->having('items_status_labeled_count', '>', 0)
+                          ->havingRaw('items_status_labeled_count < items_count');
+                    break;
+                case 'partial_shipped':
+                    $query->having('items_status_shipped_count', '>', 0)
+                          ->havingRaw('items_status_shipped_count < items_count');
+                    break;
+            }
         }
 
         $orders = $query->paginate(20)->appends($request->query());
 
-        // ビューは ym（YYYY-MM）を使う。空なら '' を渡す。
         return view('orders.index', [
             'orders' => $orders,
             'q'      => $q,
+            'ym'     => $ym,
             'sort'   => $sort,
-            'ym'     => $ym ?: ( ($year && $month) ? sprintf('%04d-%02d', $year, $month) : '' ),
+            'status' => $status, // ← ビューで active 表示に使う
         ]);
     }
 

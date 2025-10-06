@@ -57,13 +57,15 @@
 <body>
 <div class="app">
   <aside>
-    <h2 class="brand">販売管理</h2>
+    <h2 class="brand">笑人堂<br>販売管理システム</h2>
     <nav>
       <a href="{{ route('orders.import.create') }}" class="{{ request()->routeIs('orders.import.*') ? 'active' : '' }}">注文取り込み</a>
       <a href="{{ route('orders.index') }}" class="{{ request()->routeIs('orders.index') ? 'active' : '' }}">注文一覧</a>
       <a href="{{ route('bank.index') }}" class="{{ request()->routeIs('bank.*') ? 'active' : '' }}">振り込み記録</a>
       <a href="{{ route('po.index') }}" class="{{ request()->routeIs('po.*') ? 'active' : '' }}">注文書発行</a>
-      <li><a href="{{ route('labels.index') }}">送り状発行</a></li>
+      <a href="{{ route('labels.index') }}">送り状発行</a>
+      <a href="{{ route('shipping.index') }}">発送処理</a>
+      <a href="{{ route('income.index') }}">収支</a>
     </nav>
   </aside>
   <main>

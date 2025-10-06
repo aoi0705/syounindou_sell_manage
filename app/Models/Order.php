@@ -37,4 +37,9 @@ class Order extends Model
     {
         return $this->hasMany(\App\Models\BankTransfer::class);
     }
+
+    public function bankTransfers()
+    {
+        return $this->hasMany(\App\Models\BankTransfer::class);
+    }
 }

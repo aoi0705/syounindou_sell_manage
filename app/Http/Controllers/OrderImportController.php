@@ -20,6 +20,7 @@ class OrderImportController extends Controller
     {
         $raw  = (string)$request->input('raw_body', '');
         $note = trim((string)$request->input('note', ''));
+        $isGift = $request->boolean('is_gift');
 
         // 受信メール本文をパース（実装は OrderEmailParser 側）
         $p = $parser->parse($raw);
@@ -83,7 +84,7 @@ class OrderImportController extends Controller
 
                 'mail_preference'     => $p['mail_preference'] ?? null,
                 'is_shipped'          => false,
-                'is_gift'             => false,
+                'is_gift'             => $isGift,
 
                 'raw_body'            => $raw,   // 原文も保持
                 'note'                => $note,  // フォームの備考
